@@ -1,0 +1,63 @@
+/* 
+  Localizable.strings
+  Habit Tracker
+
+  Created by Adam Szydłowski on 22/02/2025.
+
+*/
+"GainTime" = "GainTime";
+"Add Your First Habit" = "Add Your First Habit";
+"Build Habits, Gain Time" = "Build Habits, Gain Time";
+"ACHIEVE MORE !" = "ACHIEVE MORE !";
+"Settings" = "Settings";
+"Display" = "Display";
+"Appearance" = "Appearance";
+"Language" = "Language";
+"Select Language" = "Select Language";
+"Defaults" = "Defaults";
+"Reward Settings" = "Reward Settings";
+"Goal Settings" = "Goal Settings";
+"Start Again" = "Start Again";
+"Reset Application" = "Reset Application";
+"Cancel" = "Cancel";
+"Done" = "Done";
+"Add" = "Add";
+"New Habit" = "New Habit";
+"Habit Details" = "Habit Details";
+"Title" = "Title";
+"Description" = "Description";
+"Priority" = "Priority";
+"Low" = "Low";
+"Medium" = "Medium";
+"High" = "High";
+"Frequency" = "Frequency";
+"Daily" = "Daily";
+"Weekly" = "Weekly";
+"Monthly" = "Monthly";
+"Custom" = "Custom";
+"Goal" = "Goal";
+"Target" = "Target";
+"Period" = "Period";
+"Duration" = "Duration";
+"Set End Date" = "Set End Date";
+"End Date" = "End Date";
+"Created" = "Created";
+"Statistics" = "Statistics";
+"Total Completions" = "Total Completions";
+"Longest Streak" = "Longest Streak";
+"Successful Days" = "Successful Days";
+"days" = "days";
+"Select Date" = "Select Date";
+"Calendar" = "Calendar";
+"Progress" = "Progress";
+"Main Prize" = "Main Prize";
+"Cost" = "Cost";
+"Add Link" = "Add Link";
+"Add Image" = "Add Image";
+"Accumulated" = "Accumulated";
+"Remaining" = "Remaining";
+"Estimated Completion" = "Estimated Completion";
+"Reset" = "Reset";
+"Habit Reminder" = "Habit Reminder";
+"Time for: %@" = "Time for: %@";
+"Don't forget to complete: %@" = "Don't forget to complete: %@";

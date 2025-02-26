@@ -1,0 +1,64 @@
+/* 
+  Localizable.strings
+  Habit Tracker
+
+  Created by Adam Szydłowski on 22/02/2025.
+
+*/
+
+"GainTime" = "GainTime";
+"Add Your First Habit" = "Aggiungi il tuo primo hábito";
+"Build Habits, Gain Time" = "Costruisci hábiti, guadagna tempo";
+"ACHIEVE MORE !" = "OTTENI DI PIÙ!";
+"Settings" = "Impostazioni";
+"Display" = "Display";
+"Appearance" = "Aspetto";
+"Language" = "Lingua";
+"Select Language" = "Seleziona Lingua";
+"Defaults" = "Predefiniti";
+"Reward Settings" = "Impostazioni Ricompense";
+"Goal Settings" = "Impostazioni Obiettivi";
+"Start Again" = "Ricomincia";
+"Reset Application" = "Reimposta Applicazione";
+"Cancel" = "Annulla";
+"Done" = "Fatto";
+"Add" = "Aggiungi";
+"New Habit" = "Nuovo hábito";
+"Habit Details" = "Dettagli del hábito";
+"Title" = "Titolo";
+"Description" = "Descrizione";
+"Priority" = "Priorità";
+"Low" = "Basso";
+"Medium" = "Medio";
+"High" = "Alto";
+"Frequency" = "Frequenza";
+"Daily" = "Giornaliero";
+"Weekly" = "Settimanale";
+"Monthly" = "Mensile";
+"Custom" = "Personalizzato";
+"Goal" = "Obiettivo";
+"Target" = "Meta";
+"Period" = "Periodo";
+"Duration" = "Durata";
+"Set End Date" = "Imposta Data di Fine";
+"End Date" = "Data di Fine";
+"Created" = "Creato";
+"Statistics" = "Statistiche";
+"Total Completions" = "Completamenti Totali";
+"Longest Streak" = "Serie Più Lunga";
+"Successful Days" = "Giorni Successivi";
+"days" = "giorni";
+"Select Date" = "Seleziona Data";
+"Calendar" = "Calendario";
+"Progress" = "Progresso";
+"Main Prize" = "Premio Principale";
+"Cost" = "Costo";
+"Add Link" = "Aggiungi Link";
+"Add Image" = "Aggiungi Immagine";
+"Accumulated" = "Accumulato";
+"Remaining" = "Rimanente";
+"Estimated Completion" = "Completamento Stimato";
+"Reset" = "Reimposta";
+"Habit Reminder" = "Promemoria abitudine";
+"Time for: %@" = "È ora di: %@";
+"Don't forget to complete: %@" = "Non dimenticare di completare: %@";
