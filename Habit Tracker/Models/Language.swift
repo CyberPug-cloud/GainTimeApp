@@ -25,22 +25,21 @@ enum Language: String, CaseIterable, Identifiable {
         return Language.allCases.first { $0.rawValue == baseCode } ?? .english
     }
 
-    /// Returns localized name of the language
-    /// Uses NSLocalizedString for translation
+    /// Returns native name of the language
     var localizedName: String {
         switch self {
         case .english:
-            return NSLocalizedString("English", comment: "English language name")
+            return "English"
         case .french:
-            return NSLocalizedString("French", comment: "French language name")
+            return "Français"
         case .german:
-            return NSLocalizedString("German", comment: "German language name")
+            return "Deutsch"
         case .polish:
-            return NSLocalizedString("Polish", comment: "Polski language name")
+            return "Polski"
         case .spanish:
-            return NSLocalizedString("Spanish", comment: "Spanish language name")
+            return "Español"
         case .italian:
-            return NSLocalizedString("Italian", comment: "Italian language name")
+            return "Italiano"
         }
     }
 } 

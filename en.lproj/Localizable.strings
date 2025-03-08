@@ -15,7 +15,6 @@
 "Language" = "Language";
 "Select Language" = "Select Language";
 "Defaults" = "Defaults";
-"Reward Settings" = "Reward Settings";
 "Goal Settings" = "Goal Settings";
 "Start Again" = "Start Again";
 "Reset Application" = "Reset Application";
@@ -50,14 +49,33 @@
 "Select Date" = "Select Date";
 "Calendar" = "Calendar";
 "Progress" = "Progress";
-"Main Prize" = "Main Prize";
-"Cost" = "Cost";
-"Add Link" = "Add Link";
-"Add Image" = "Add Image";
-"Accumulated" = "Accumulated";
-"Remaining" = "Remaining";
-"Estimated Completion" = "Estimated Completion";
-"Reset" = "Reset";
 "Habit Reminder" = "Habit Reminder";
 "Time for: %@" = "Time for: %@";
 "Don't forget to complete: %@" = "Don't forget to complete: %@";
+"Starting Date:" = "Starting Date:";
+"Completion Date:" = "Completion Date:";
+"In progress" = "In progress";
+"Every" = "Every";
+"Unit" = "Unit";
+"Custom Frequency" = "Custom Frequency";
+"Days" = "Days";
+"Weeks" = "Weeks";
+"day" = "day";
+"week" = "week";
+"low" = "low";
+"medium" = "medium";
+"high" = "high";
+"Light" = "Light";
+"Dark" = "Dark";
+"System" = "System";
+
+/* Rating Dialog */
+"Do you enjoy GainTime?" = "Do you enjoy GainTime?";
+"Tap a star to rate it on the App Store" = "Tap a star to rate it on the App Store";
+"Not now" = "Not now";
+
+/* Rating Section in Settings */
+"Rate GainTime" = "Rate GainTime";
+"SUPPORT US" = "SUPPORT US";
+"Your feedback helps us improve the app" = "Your feedback helps us improve the app";
+

@@ -4,14 +4,10 @@ struct AddHabitView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var habitStore: HabitStore
     
-    @AppStorage("defaultGoalTarget") private var defaultGoalTarget = 1
-    @AppStorage("defaultGoalPeriod") private var defaultGoalPeriod = Habit.Goal.Period.day.rawValue
-    
     @State private var title = ""
     @State private var description = ""
     @State private var priority = Habit.Priority.medium
     @State private var frequency = Habit.Frequency.daily
-    @State private var goal = Habit.Goal.empty
     @State private var showingCustomFrequency = false
     @State private var hasEndDate = false
     @State private var endDate = Date()
@@ -69,7 +65,7 @@ struct AddHabitView: View {
                                     HStack {
                                         Image(systemName: "flag.fill")
                                             .foregroundStyle(priority.color)
-                                        Text(priority.rawValue.capitalized)
+                                        Text(priority.localizedValue.capitalized)
                                     }
                                 }
                             }
@@ -79,7 +75,7 @@ struct AddHabitView: View {
                                 Spacer()
                                 Image(systemName: "flag.fill")
                                     .foregroundStyle(priority.color)
-                                Text(priority.rawValue.capitalized)
+                                Text(priority.localizedValue.capitalized)
                                     .foregroundStyle(.secondary)
                                 Image(systemName: "chevron.up.chevron.down")
                                     .foregroundStyle(.secondary)
@@ -88,32 +84,6 @@ struct AddHabitView: View {
                         }
                         
                         frequencyPicker
-                    }
-                    
-                    Section("Goal") {
-                        if goal.period == .day {
-                            Text("Target: 1 time daily")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Stepper("Target: \(goal.target) times", value: $goal.target, in: 1...100)
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Text("Period")
-                            
-                            Picker("Period", selection: $goal.period) {
-                                ForEach(Habit.Goal.Period.allCases, id: \.self) { period in
-                                    Text(period.rawValue)
-                                        .tag(period)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .onChange(of: goal.period) { _, newPeriod in
-                                if newPeriod == .day {
-                                    goal.target = 1
-                                }
-                            }
-                        }
                     }
                     
                     Section("Duration") {
@@ -159,11 +129,9 @@ struct AddHabitView: View {
                             description: description,
                             priority: priority,
                             frequency: frequency,
-                            rewards: .empty,
-                            goal: goal,
+                            goal: Habit.Goal.empty,
                             endDate: hasEndDate ? endDate : nil,
                             creationDate: Date(),
-                            reward: 10.0,
                             notificationTime: notificationsEnabled ? notificationTime : nil,
                             notificationsEnabled: notificationsEnabled
                         )
@@ -180,12 +148,8 @@ struct AddHabitView: View {
             }
         }
         .onAppear {
-            goal = Habit.Goal(
-                target: defaultGoalTarget,
-                period: Habit.Goal.Period(rawValue: defaultGoalPeriod) ?? .day
-            )
             if !notificationManager.isPermissionGranted {
-                notificationManager.requestPermissions()
+                notificationManager.requestAuthorization()
             }
         }
         .sheet(isPresented: $showingCustomFrequency) {

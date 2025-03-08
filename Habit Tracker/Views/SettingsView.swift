@@ -1,100 +1,273 @@
 import SwiftUI
+import StoreKit
+
+// Helper extension to provide default notification time
+extension SettingsView {
+    static func defaultNotificationTime() -> Date {
+        let components = DateComponents(hour: 21, minute: 0)
+        return Calendar.current.date(from: components) ?? Date()
+    }
+}
 
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.locale) var locale
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject private var habitStore: HabitStore
     @AppStorage("displayMode") private var displayMode = DisplayMode.system.rawValue
+    @AppStorage("hasSubmittedReview") private var hasSubmittedReview = false
     @State private var selectedMode = DisplayMode.system.rawValue
     @State private var showingResetAlert = false
     @StateObject private var localizationHelper = LocalizationHelper()
     
+    // Missed habit notification settings
+    @AppStorage("missedHabitNotificationsEnabled") private var missedHabitNotificationsEnabled = false
+    @AppStorage("missedHabitNotificationTime") private var missedHabitNotificationTime = SettingsView.defaultNotificationTime()
+    @State private var showingTimePicker = false
+    
+    // Time formatter for displaying the selected time
+    private var timeFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }
+    
+    // MARK: - View Components
+    
+    // Display section
+    private var displaySection: some View {
+        Section {
+            Menu {
+                ForEach(DisplayMode.allCases, id: \.self) { mode in
+                    Button {
+                        selectedMode = mode.rawValue
+                    } label: {
+                        HStack {
+                            Text(mode.localizedValue(for: locale))
+                            Spacer()
+                            if selectedMode == mode.rawValue {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(LocalizedStringKey("Appearance"))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text(DisplayMode(rawValue: selectedMode)?.localizedValue(for: locale) ?? "")
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
+            .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+            .listRowSeparator(.hidden)
+        } header: {
+            Text(LocalizedStringKey("DISPLAY"))
+                .foregroundColor(.white)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        }
+    }
+    
+    // Notification settings section
+    private var notificationSection: some View {
+        Section {
+            Toggle(LocalizedStringKey("Uncompleted Task Reminders"), isOn: $missedHabitNotificationsEnabled)
+                .onChange(of: missedHabitNotificationsEnabled) { _, newValue in
+                    if newValue {
+                        // Request notification permissions if enabled
+                        NotificationManager.shared.requestAuthorization()
+                        // Schedule missed habit notifications
+                        NotificationManager.shared.scheduleMissedHabitNotification(at: missedHabitNotificationTime)
+                    } else {
+                        // Cancel missed habit notifications
+                        NotificationManager.shared.cancelMissedHabitNotifications()
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+                .listRowSeparator(.hidden)
+            
+            if missedHabitNotificationsEnabled {
+                Button {
+                    showingTimePicker = true
+                } label: {
+                    HStack {
+                        Text(LocalizedStringKey("Reminder Time"))
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text(timeFormatter.string(from: missedHabitNotificationTime))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+                .listRowSeparator(.hidden)
+            }
+        } header: {
+            Text(LocalizedStringKey("NOTIFICATIONS"))
+                .foregroundColor(.white)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        } footer: {
+            Text(LocalizedStringKey("Get reminded about habits you haven't completed yet"))
+                .foregroundColor(.white.opacity(0.8))
+                .font(.caption)
+        }
+    }
+    
+    // Language section
+    private var languageSection: some View {
+        Section {
+            Menu {
+                ForEach(Language.allCases) { language in
+                    Button(action: {
+                        localizationHelper.setLanguage(language)
+                    }) {
+                        HStack {
+                            Text(language.localizedName)
+                            if localizationHelper.selectedLanguage == language {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(LocalizedStringKey("Select Language"))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text(localizationHelper.selectedLanguage.localizedName)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+            .listRowSeparator(.hidden)
+        } header: {
+            Text(LocalizedStringKey("LANGUAGE"))
+                .foregroundColor(.white)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        }
+    }
+    
+    // Reset section
+    private var resetSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showingResetAlert = true
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundColor(.red)
+                    Text(LocalizedStringKey("Reset Application"))
+                        .foregroundColor(.red)
+                }
+            }
+            .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+            .listRowSeparator(.hidden)
+        }
+    }
+    
+    // App rating section
+    private var ratingSection: some View {
+        Section {
+            Button {
+                // Request review using StoreKit
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                    SKStoreReviewController.requestReview(in: windowScene)
+                    // Mark as reviewed to prevent future popups
+                    hasSubmittedReview = true
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.blue)
+                    Text(LocalizedStringKey("Rate GainTime"))
+                        .foregroundColor(.blue)
+                }
+            }
+            .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+            .listRowSeparator(.hidden)
+        } header: {
+            Text(LocalizedStringKey("SUPPORT US"))
+                .foregroundColor(.white)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        } footer: {
+            Text(LocalizedStringKey("Your feedback helps us improve the app"))
+                .foregroundColor(.white.opacity(0.8))
+                .font(.caption)
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                BackgroundGradientView()
+                // Custom background that adapts to dark mode
+                LinearGradient(
+                    colors: colorScheme == .dark ? [
+                        Color.black, // Pure black for dark mode
+                        Color.black  // Pure black for dark mode
+                    ] : [
+                        Color(red: 0.4, green: 0.9, blue: 0.9), // Light turquoise
+                        Color(red: 0.3, green: 0.8, blue: 0.8)  // Darker turquoise
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
                 List {
-                    Section {
-                        Menu {
-                            ForEach(DisplayMode.allCases, id: \.self) { mode in
-                                Button {
-                                    selectedMode = mode.rawValue
-                                } label: {
-                                    HStack {
-                                        Text(mode.rawValue)
-                                        Spacer()
-                                        if selectedMode == mode.rawValue {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                Text("Appearance")
-                                Spacer()
-                                Text(selectedMode.capitalized)
-                                    .foregroundStyle(.secondary)
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
-                            }
-                        }
-                    } header: {
-                        Text("Display")
-                    }
-                    
-                    Section(header: Text("Language")) {
-                        Menu {
-                            ForEach(Language.allCases) { language in
-                                Button(action: {
-                                    localizationHelper.setLanguage(language)
-                                }) {
-                                    HStack {
-                                        Text(language.localizedName)
-                                        if localizationHelper.selectedLanguage == language {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                Text("Select Language")
-                                Spacer()
-                                Text(localizationHelper.selectedLanguage.localizedName)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    Section {
-                        Button(role: .destructive) {
-                            showingResetAlert = true
-                        } label: {
-                            Label("Reset Application", systemImage: "arrow.triangle.2.circlepath")
-                        }
-                    }
+                    displaySection
+                    notificationSection
+                    languageSection
+                    resetSection
+                    ratingSection
                 }
                 .scrollContentBackground(.hidden)
+                .listStyle(.insetGrouped)
             }
-            .navigationTitle("Settings")
+            .navigationTitle(LocalizedStringKey("Settings"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.light, for: .navigationBar)
+            .toolbarBackground(colorScheme == .dark ? 
+                Color.black : 
+                Color(red: 0.4, green: 0.9, blue: 0.9), 
+                for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Settings")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    Button(LocalizedStringKey("Done")) {
                         displayMode = selectedMode
                         dismiss()
                     }
+                    .foregroundColor(.blue)
                 }
             }
-            .alert("Reset Application", isPresented: $showingResetAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Reset", role: .destructive) {
+            .alert(LocalizedStringKey("Reset Application"), isPresented: $showingResetAlert) {
+                Button(LocalizedStringKey("Cancel"), role: .cancel) {}
+                Button(LocalizedStringKey("Reset"), role: .destructive) {
                     resetApplication()
                 }
             } message: {
-                Text("Are you sure you want to reset the application? This action cannot be undone.")
+                Text(LocalizedStringKey("Are you sure you want to reset the application? This action cannot be undone."))
+            }
+            .sheet(isPresented: $showingTimePicker) {
+                TimePickerView(selectedTime: $missedHabitNotificationTime, onSave: {
+                    if missedHabitNotificationsEnabled {
+                        // Reschedule notifications with new time
+                        NotificationManager.shared.scheduleMissedHabitNotification(at: missedHabitNotificationTime)
+                    }
+                    showingTimePicker = false
+                })
             }
             .onAppear {
                 selectedMode = displayMode
@@ -109,118 +282,69 @@ struct SettingsView: View {
         displayMode = DisplayMode.system.rawValue
         selectedMode = DisplayMode.system.rawValue
         
-        // Remove goal-related defaults since they're not used
-        UserDefaults.standard.removeObject(forKey: "defaultGoalTarget")
-        UserDefaults.standard.removeObject(forKey: "defaultGoalPeriod")
+        // Reset notification settings
+        missedHabitNotificationsEnabled = false
+        missedHabitNotificationTime = SettingsView.defaultNotificationTime()
     }
 }
 
-struct RewardSettingsView: View {
-    @AppStorage("defaultSmallReward") private var defaultSmallReward = ""
-    @AppStorage("defaultMediumReward") private var defaultMediumReward = ""
-    @AppStorage("defaultLargeReward") private var defaultLargeReward = ""
-    @AppStorage("defaultGoalReward") private var defaultGoalReward = ""
-    @AppStorage("selectedCurrency") private var selectedCurrency = Currency.pln.rawValue
-    @State private var showingCurrencyPicker = false
-    
-    private var currency: Currency {
-        Currency(rawValue: selectedCurrency) ?? .pln
-    }
+// Time picker view for selecting notification time
+struct TimePickerView: View {
+    @Binding var selectedTime: Date
+    var onSave: () -> Void
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        ZStack {
-            BackgroundGradientView()
-            
-            Form {
-                Section {
-                    Button {
-                        showingCurrencyPicker = true
-                    } label: {
-                        HStack {
-                            Text("Currency")
-                            Spacer()
-                            Text("\(currency.name) (\(currency.symbol))")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                } header: {
-                    Label("Currency Settings", systemImage: "dollarsign.circle.fill")
-                }
+        NavigationStack {
+            ZStack {
+                // Custom background that adapts to dark mode
+                LinearGradient(
+                    colors: colorScheme == .dark ? [
+                        Color.black, // Pure black for dark mode
+                        Color.black  // Pure black for dark mode
+                    ] : [
+                        Color(red: 0.4, green: 0.9, blue: 0.9), // Light turquoise
+                        Color(red: 0.3, green: 0.8, blue: 0.8)  // Darker turquoise
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
-                Section {
-                    TextField("Default small reward", text: $defaultSmallReward)
-                        .textInputAutocapitalization(.sentences)
-                } header: {
-                    Label("Daily Reward", systemImage: "star")
-                } footer: {
-                    Text("Default reward for completing a habit once")
-                }
-                
-                Section {
-                    TextField("Default medium reward", text: $defaultMediumReward)
-                        .textInputAutocapitalization(.sentences)
-                } header: {
-                    Label("Weekly Reward", systemImage: "star.fill")
-                } footer: {
-                    Text("Default reward for maintaining a 7-day streak")
-                }
-                
-                Section {
-                    TextField("Default large reward", text: $defaultLargeReward)
-                        .textInputAutocapitalization(.sentences)
-                } header: {
-                    Label("Monthly Reward", systemImage: "star.circle.fill")
-                } footer: {
-                    Text("Default reward for maintaining a 30-day streak")
-                }
-                
-                Section {
-                    TextField("Default goal reward", text: $defaultGoalReward)
-                        .textInputAutocapitalization(.sentences)
-                } header: {
-                    Label("Goal Reward", systemImage: "checkmark.circle.fill")
-                } footer: {
-                    Text("Special reward for achieving your habit goal")
+                VStack {
+                    DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.wheel)
+                        .labelsHidden()
+                        .padding()
+                        .background(Color(UIColor.systemBackground).opacity(0.9))
+                        .cornerRadius(16)
+                        .padding()
                 }
             }
-            .scrollContentBackground(.hidden)
-        }
-        .navigationTitle("Default Rewards")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingCurrencyPicker) {
-            CurrencyPickerView(selectedCurrency: $selectedCurrency)
-        }
-    }
-}
-
-struct GoalSettingsView: View {
-    @AppStorage("defaultGoalTarget") private var defaultGoalTarget = 1
-    @AppStorage("defaultGoalPeriod") private var defaultGoalPeriod = Habit.Goal.Period.day.rawValue
-    
-    var body: some View {
-        ZStack {
-            BackgroundGradientView()
-            
-            Form {
-                Section {
-                    Stepper("Target: \(defaultGoalTarget) times", value: $defaultGoalTarget, in: 1...100)
-                    
-                    Picker("Period", selection: $defaultGoalPeriod) {
-                        ForEach(Habit.Goal.Period.allCases, id: \.self) { period in
-                            Text(period.rawValue)
-                                .tag(period.rawValue)
-                        }
+            .navigationTitle(LocalizedStringKey("Select Time"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(colorScheme == .dark ? .dark : .light, for: .navigationBar)
+            .toolbarBackground(colorScheme == .dark ? 
+                Color.black : 
+                Color(red: 0.4, green: 0.9, blue: 0.9), 
+                for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizedStringKey("Cancel")) {
+                        dismiss()
                     }
-                } header: {
-                    Label("Default Goal", systemImage: "target")
-                } footer: {
-                    Text("Set how many times you want to complete habits by default")
+                    .foregroundColor(colorScheme == .dark ? .white : .blue)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizedStringKey("Save")) {
+                        onSave()
+                    }
+                    .foregroundColor(colorScheme == .dark ? .white : .blue)
                 }
             }
-            .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Default Goals")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

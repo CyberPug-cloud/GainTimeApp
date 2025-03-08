@@ -5,6 +5,14 @@ struct StatisticsView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var habitStore: HabitStore
     
+    // Date formatter for consistent date display
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+    
     private func habitStats(for habit: Habit) -> (completions: Int, streak: Int, successRate: (completed: Int, total: Int)) {
         let calendar = Calendar.current
         let completions = habit.completedDates.count
@@ -54,6 +62,22 @@ struct StatisticsView: View {
                                             .foregroundStyle(.white)
                                         Spacer()
                                         Text("\(stats.successRate.completed)/\(stats.successRate.total)")
+                                            .foregroundStyle(.white)
+                                    }
+                                    
+                                    HStack {
+                                        Text("Starting Date:")
+                                            .foregroundStyle(.white)
+                                        Spacer()
+                                        Text(dateFormatter.string(from: habit.creationDate))
+                                            .foregroundStyle(.white)
+                                    }
+                                    
+                                    HStack {
+                                        Text("Completion Date:")
+                                            .foregroundStyle(.white)
+                                        Spacer()
+                                        Text(habit.endDate != nil ? dateFormatter.string(from: habit.endDate!) : "In progress")
                                             .foregroundStyle(.white)
                                     }
                                 }

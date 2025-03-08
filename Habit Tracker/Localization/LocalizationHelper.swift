@@ -32,11 +32,13 @@ class LocalizationHelper: ObservableObject {
     }
     
     private func rescheduleAllNotifications() {
-        // Use HabitStore instead of reading directly from UserDefaults
-        HabitStore.shared.habits.forEach { habit in
-            if habit.notificationsEnabled {
-                NotificationManager.shared.scheduleHabitReminder(for: habit)
-            }
+        // Cancel all existing notifications first
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        
+        // Use the comprehensive method in NotificationManager
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            NotificationManager.shared.rescheduleAllNotifications()
         }
     }
 }

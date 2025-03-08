@@ -7,11 +7,9 @@ struct Habit: Identifiable, Codable {
     var completedDates: Set<Date>
     var priority: Priority
     var frequency: Frequency
-    var rewards: Rewards
     var goal: Goal
     var endDate: Date?
     var creationDate: Date
-    var reward: Double // Amount of reward for completing this habit
     var notificationTime: Date?
     var notificationsEnabled: Bool
     var isActive: Bool {
@@ -29,6 +27,18 @@ struct Habit: Identifiable, Codable {
             case .high: .red
             }
         }
+        
+        // Add a computed property to get localized value
+        var localizedValue: String {
+            switch self {
+            case .low:
+                return NSLocalizedString("low", comment: "Low priority")
+            case .medium:
+                return NSLocalizedString("medium", comment: "Medium priority")
+            case .high:
+                return NSLocalizedString("high", comment: "High priority")
+            }
+        }
     }
     
     enum Frequency: Codable, Equatable, Hashable {
@@ -40,15 +50,41 @@ struct Habit: Identifiable, Codable {
         enum TimeUnit: String, Codable, CaseIterable {
             case days = "Days"
             case weeks = "Weeks"
+            
+            // Add a computed property to get localized raw value
+            var localizedValue: String {
+                switch self {
+                case .days:
+                    return NSLocalizedString("Days", comment: "Days time unit")
+                case .weeks:
+                    return NSLocalizedString("Weeks", comment: "Weeks time unit")
+                }
+            }
         }
         
         var description: String {
             switch self {
-            case .daily: return "Daily"
-            case .weekly: return "Weekly"
-            case .monthly: return "Monthly"
+            case .daily: return NSLocalizedString("Daily", comment: "Daily frequency")
+            case .weekly: return NSLocalizedString("Weekly", comment: "Weekly frequency")
+            case .monthly: return NSLocalizedString("Monthly", comment: "Monthly frequency")
             case .custom(let interval, let unit):
-                return "Every \(interval) \(unit.rawValue.lowercased())"
+                // Handle pluralization correctly
+                let unitString: String
+                if interval == 1 {
+                    // Use singular form
+                    switch unit {
+                    case .days:
+                        unitString = NSLocalizedString("day", comment: "Singular day")
+                    case .weeks:
+                        unitString = NSLocalizedString("week", comment: "Singular week")
+                    }
+                } else {
+                    // Use plural form (from the localized value)
+                    unitString = unit.localizedValue.lowercased()
+                }
+                
+                let format = NSLocalizedString("Every", comment: "Custom frequency prefix") + " \(interval) " + unitString
+                return format
             }
         }
         
@@ -122,14 +158,6 @@ struct Habit: Identifiable, Codable {
         }
     }
     
-    struct Rewards: Codable {
-        var small: String
-        var medium: String
-        var large: String
-        
-        static let empty = Rewards(small: "", medium: "", large: "")
-    }
-    
     struct Goal: Codable {
         var target: Int
         var period: Period
@@ -156,11 +184,9 @@ struct Habit: Identifiable, Codable {
         description: String,
         priority: Priority,
         frequency: Frequency = .daily,
-        rewards: Rewards = .empty,
         goal: Goal = Goal(target: 1, period: .day),
         endDate: Date? = nil,
         creationDate: Date = Date(),
-        reward: Double = 10.0,
         notificationTime: Date? = nil,
         notificationsEnabled: Bool = false
     ) {
@@ -170,11 +196,9 @@ struct Habit: Identifiable, Codable {
         self.completedDates = []
         self.priority = priority
         self.frequency = frequency
-        self.rewards = rewards
         self.goal = goal
         self.endDate = endDate
         self.creationDate = creationDate
-        self.reward = reward
         self.notificationTime = notificationTime
         self.notificationsEnabled = notificationsEnabled
     }
@@ -188,6 +212,16 @@ struct Habit: Identifiable, Codable {
     
     func isCompletedToday() -> Bool {
         isCompletedOn(Date())
+    }
+    
+    /// Finds the completion date object for a given day
+    /// - Parameter date: The date to check
+    /// - Returns: The actual completion date object if found, nil otherwise
+    func findCompletionDate(for date: Date) -> Date? {
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        return completedDates.first { completedDate in
+            Calendar.current.isDate(completedDate, inSameDayAs: startOfDay)
+        }
     }
     
     func streak() -> Int {

@@ -4,7 +4,6 @@ struct HabitSettingsView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var habit: Habit
     @State private var showingCustomFrequency = false
-    @State private var showingCustomPeriod = false
     @State private var hasEndDate: Bool
     @State private var endDate: Date
     @State private var notificationsEnabled: Bool
@@ -86,7 +85,7 @@ struct HabitSettingsView: View {
                                     HStack {
                                         Image(systemName: "flag.fill")
                                             .foregroundStyle(priority.color)
-                                        Text(priority.rawValue.capitalized)
+                                        Text(priority.localizedValue.capitalized)
                                     }
                                 }
                             }
@@ -96,7 +95,7 @@ struct HabitSettingsView: View {
                                 Spacer()
                                 Image(systemName: "flag.fill")
                                     .foregroundStyle(habit.priority.color)
-                                Text(habit.priority.rawValue.capitalized)
+                                Text(habit.priority.localizedValue.capitalized)
                                     .foregroundStyle(.secondary)
                                 Image(systemName: "chevron.up.chevron.down")
                                     .foregroundStyle(.secondary)
@@ -105,32 +104,6 @@ struct HabitSettingsView: View {
                         }
                         
                         frequencyPicker
-                    }
-                    
-                    Section("Goal") {
-                        if habit.goal.period == .day {
-                            Text("Target: 1 time daily")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Stepper("Target: \(habit.goal.target) times", value: $habit.goal.target, in: 1...100)
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Text("Period")
-                            
-                            Picker("Period", selection: $habit.goal.period) {
-                                ForEach(Habit.Goal.Period.allCases, id: \.self) { period in
-                                    Text(period.rawValue)
-                                        .tag(period)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .onChange(of: habit.goal.period) { _, newPeriod in
-                                if newPeriod == .day {
-                                    habit.goal.target = 1
-                                }
-                            }
-                        }
                     }
                     
                     Section("Duration") {
@@ -175,11 +148,8 @@ struct HabitSettingsView: View {
             .sheet(isPresented: $showingCustomFrequency) {
                 CustomFrequencyView(frequency: $habit.frequency)
             }
-            .sheet(isPresented: $showingCustomPeriod) {
-                CustomPeriodView(period: $habit.goal.period)
-            }
         }
-        .onChange(of: notificationsEnabled) { newValue in
+        .onChange(of: notificationsEnabled) { _, newValue in
             habit.notificationsEnabled = newValue
             habit.notificationTime = newValue ? notificationTime : nil
             
@@ -189,7 +159,7 @@ struct HabitSettingsView: View {
                 NotificationManager.shared.cancelHabitReminders(for: habit)
             }
         }
-        .onChange(of: notificationTime) { newValue in
+        .onChange(of: notificationTime) { _, newValue in
             if notificationsEnabled {
                 habit.notificationTime = newValue
                 NotificationManager.shared.scheduleHabitReminder(for: habit)
