@@ -1,5 +1,4 @@
 import SwiftUI
-import StoreKit
 
 struct CompletionButton: View {
     // MARK: - Properties
@@ -7,10 +6,11 @@ struct CompletionButton: View {
     @Binding var habit: Habit
     let selectedDate: Date
     
-    // App Storage properties for rating and tracking
+    // App Storage properties for tracking
     @AppStorage("consecutiveCompletionDays") private var consecutiveCompletionDays = 0
-    @AppStorage("hasSubmittedReview") private var hasSubmittedReview = false
-    @AppStorage("lastReviewRequestDate") private var lastReviewRequestDate: Date?
+    
+    // Rating manager instance
+    private let ratingManager = RatingManager.shared
     
     // MARK: - Methods
     
@@ -49,6 +49,9 @@ struct CompletionButton: View {
                 // Use the start of day for consistency
                 habit.completedDates.insert(startOfSelectedDate)
                 
+                // Track completion for rating prompt
+                ratingManager.trackCompletion(for: habit)
+                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     NotificationManager.shared.forceCancelAllNotifications(for: habit)
                     
@@ -58,9 +61,6 @@ struct CompletionButton: View {
                             
                             // If all habits are completed today, increment consecutive days
                             consecutiveCompletionDays += 1
-                            
-                            // Check if we should show rating request
-                            self.checkIfShouldRequestReview()
                         }
                     }
                 }
@@ -70,39 +70,6 @@ struct CompletionButton: View {
         if let index = HabitStore.shared.habits.firstIndex(where: { $0.id == habit.id }) {
             HabitStore.shared.habits[index] = habit
             HabitStore.shared.saveHabits(HabitStore.shared.habits)
-        }
-    }
-    
-    /// Checks if the app should request a review based on usage patterns
-    private func checkIfShouldRequestReview() {
-        // Don't show if user has already submitted a review
-        if hasSubmittedReview {
-            return
-        }
-        
-        // Check if we need to wait 14 days since last request
-        if let lastDate = lastReviewRequestDate {
-            let calendar = Calendar.current
-            let daysSinceLastRequest = calendar.dateComponents([.day], from: lastDate, to: Date()).day ?? 0
-            
-            // If it's been less than 14 days since the last request, don't show
-            if daysSinceLastRequest < 14 {
-                return
-            }
-        }
-        
-        // Show if user has completed habits for at least 3 consecutive days
-        if consecutiveCompletionDays >= 3 {
-            // Request review using StoreKit
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                if #available(iOS 18.0, *) {
-                    AppStore.requestReview(in: windowScene)
-                } else {
-                    SKStoreReviewController.requestReview(in: windowScene)
-                }
-                // Mark as reviewed to prevent future popups
-                hasSubmittedReview = true
-            }
         }
     }
     

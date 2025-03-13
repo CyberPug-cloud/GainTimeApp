@@ -153,37 +153,16 @@ struct SettingsView: View {
         }
     }
     
-    // Reset section
-    private var resetSection: some View {
-        Section {
-            Button(role: .destructive) {
-                showingResetAlert = true
-            } label: {
-                HStack {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .foregroundColor(.red)
-                    Text(LocalizedStringKey("Reset Application"))
-                        .foregroundColor(.red)
-                }
-            }
-            .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
-            .listRowSeparator(.hidden)
-        }
-    }
-    
-    // App rating section
+    // Rating section
     private var ratingSection: some View {
         Section {
             Button {
-                // Request review using StoreKit
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                    SKStoreReviewController.requestReview(in: windowScene)
-                    // Mark as reviewed to prevent future popups
-                    hasSubmittedReview = true
+                if let url = URL(string: "https://apps.apple.com/app/id6742510279?action=write-review") {
+                    UIApplication.shared.open(url)
                 }
             } label: {
                 HStack {
-                    Image(systemName: "star.fill")
+                    Image(systemName: "star.bubble.fill")
                         .foregroundColor(.blue)
                     Text(LocalizedStringKey("Rate GainTime"))
                         .foregroundColor(.blue)
@@ -200,6 +179,24 @@ struct SettingsView: View {
             Text(LocalizedStringKey("Your feedback helps us improve the app"))
                 .foregroundColor(.white.opacity(0.8))
                 .font(.caption)
+        }
+    }
+    
+    // Reset section
+    private var resetSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showingResetAlert = true
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundColor(.red)
+                    Text(LocalizedStringKey("Reset Application"))
+                        .foregroundColor(.red)
+                }
+            }
+            .listRowBackground(Color(UIColor.systemBackground).opacity(0.9))
+            .listRowSeparator(.hidden)
         }
     }
     
@@ -224,8 +221,8 @@ struct SettingsView: View {
                     displaySection
                     notificationSection
                     languageSection
-                    resetSection
                     ratingSection
+                    resetSection
                 }
                 .scrollContentBackground(.hidden)
                 .listStyle(.insetGrouped)

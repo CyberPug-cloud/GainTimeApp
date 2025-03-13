@@ -87,21 +87,6 @@ class NotificationManager: ObservableObject {
             
             UNUserNotificationCenter.current().add(request)
         }
-        
-        // Only schedule evening reminder if the habit is not completed today
-        var components = DateComponents()
-        components.hour = 19
-        components.minute = 0
-        
-        let eveningContent = createLocalizedContent(for: habit, isEveningReminder: true)
-        let eveningTrigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        let eveningRequest = UNNotificationRequest(
-            identifier: "\(habit.id)-evening",
-            content: eveningContent,
-            trigger: eveningTrigger
-        )
-        
-        UNUserNotificationCenter.current().add(eveningRequest)
     }
     
     func cancelHabitReminders(for habit: Habit) {

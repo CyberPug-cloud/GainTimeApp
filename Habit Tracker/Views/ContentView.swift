@@ -15,9 +15,13 @@ struct ContentView: View {
     
     /// Access to system color scheme (dark/light mode)
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.requestReview) private var requestReview
     
     /// Store that manages all habits
     @StateObject private var habitStore = HabitStore.shared
+    
+    /// Rating manager for handling review requests
+    @StateObject private var ratingManager = RatingManager.shared
     
     /// Controls visibility of add habit sheet
     @State private var showingAddHabit = false
@@ -37,6 +41,9 @@ struct ContentView: View {
     /// App-wide display mode setting (system/dark/light)
     @AppStorage("displayMode") private var displayMode = DisplayMode.system.rawValue
     
+    /// Last date the app was active (for date change detection)
+    @AppStorage("lastActiveDate") private var lastActiveDate = Date()
+    
     /// Controls visibility of statistics view
     @State private var showingStatistics = false
     
@@ -51,18 +58,6 @@ struct ContentView: View {
     
     /// Tracks scene phase
     @Environment(\.scenePhase) private var scenePhase
-    
-    /// App launch counter for rating request
-    @AppStorage("appLaunchCount") private var appLaunchCount = 0
-    
-    /// Date of the last review request
-    @AppStorage("lastReviewRequestDate") private var lastReviewRequestDate: Date?
-    
-    /// Whether the user has submitted a review
-    @AppStorage("hasSubmittedReview") private var hasSubmittedReview = false
-    
-    /// Controls visibility of custom rating view
-    @State private var showingRatingView = false
     
     /// Consecutive days of habit completion
     @AppStorage("consecutiveCompletionDays") private var consecutiveCompletionDays = 0
@@ -333,40 +328,59 @@ struct ContentView: View {
             .preferredColorScheme(DisplayMode(rawValue: displayMode) == .system ? nil :
                                     DisplayMode(rawValue: displayMode) == .dark ? .dark : .light)
             .onChange(of: scenePhase) { _, newPhase in
-                if newPhase == .active {
-                    // Check for completed habits when app becomes active
-                    checkCompletedHabits()
-                    
-                    // Increment app launch count when coming from background
-                    appLaunchCount += 1
-                    
-                    // Check if we should show the rating request
-                    checkIfShouldRequestReview()
-                }
-            }
-            .overlay {
-                if showingRatingView {
-                    RatingView(
-                        isPresented: $showingRatingView,
-                        onSubmitReview: {
-                            // Mark as reviewed to prevent future popups
-                            hasSubmittedReview = true
-                        },
-                        onDismiss: {
-                            // Update the last request date to reschedule for 14 days later
-                            lastReviewRequestDate = Date()
-                        }
-                    )
-                }
+                handleScenePhaseChange(newPhase)
             }
         }
         .environmentObject(habitStore)
+        .onChange(of: ratingManager.shouldRequestReview) { _, shouldRequest in
+            if shouldRequest {
+                requestReview()
+                ratingManager.shouldRequestReview = false
+            }
+        }
     }
     
-    // MARK: - Rating Request Methods
+    // MARK: - Scene Phase Changes
+    
+    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
+        if newPhase == .active {
+            // Check if we've crossed to a new day since last active
+            checkAndUpdateDate()
+            
+            // Check for completed habits when app becomes active
+            checkCompletedHabits()
+            
+            // Check if we should show rating prompt based on installation date
+            RatingManager.shared.trackCompletion(for: habitStore.habits.first ?? Habit(title: "", description: "", priority: .medium, frequency: .daily, goal: .empty))
+        } else if newPhase == .background || newPhase == .inactive {
+            // Update the last active date when going to background
+            lastActiveDate = Date()
+        }
+    }
+    
+    /// Checks if the date has changed since the app was last active and updates the view
+    private func checkAndUpdateDate() {
+        let today = calendar.startOfDay(for: Date())
+        let lastDate = calendar.startOfDay(for: lastActiveDate)
+        
+        // If the date has changed and the user was viewing the previous date, update to today
+        if today != lastDate {
+            let currentlyViewingDate = calendar.startOfDay(for: selectedDate)
+            
+            // Only update if user was viewing the last active date (yesterday) or a date in the past
+            if currentlyViewingDate <= lastDate {
+                selectedDate = today
+            }
+            
+            // Update the last active date to today
+            lastActiveDate = today
+        }
+    }
+    
+    // MARK: - Habit Completion Methods
     
     /// Checks for completed habits when app becomes active
-    /// Updates the consecutive completion days counter and may trigger a rating request
+    /// Updates the consecutive completion days counter
     private func checkCompletedHabits() {
         if habitStore.habits.isEmpty {
             return
@@ -379,86 +393,10 @@ struct ContentView: View {
         // Update consecutive completion days counter
         if allCompleted {
             consecutiveCompletionDays += 1
-            
-            // Check if we should show the rating request after 3 consecutive days
-            if consecutiveCompletionDays >= 3 {
-                checkIfShouldRequestReview()
-            }
         } else {
             // Reset counter if not all habits are completed
             consecutiveCompletionDays = 0
         }
-    }
-    
-    /// Checks if the app should request a review based on usage patterns
-    /// Shows the rating dialog if conditions are met:
-    /// - User hasn't submitted a review yet
-    /// - It's been at least 14 days since the last request
-    /// - User has opened the app at least 5 times OR completed habits for 3 consecutive days
-    private func checkIfShouldRequestReview() {
-        // Don't show if user has already submitted a review
-        if hasSubmittedReview {
-            return
-        }
-        
-        // Check if we need to wait 14 days since last request
-        if let lastDate = lastReviewRequestDate {
-            let calendar = Calendar.current
-            let daysSinceLastRequest = calendar.dateComponents([.day], from: lastDate, to: Date()).day ?? 0
-            
-            // If it's been less than 14 days since the last request, don't show
-            if daysSinceLastRequest < 14 {
-                return
-            }
-        }
-        
-        // Show if user has opened the app at least 5 times
-        if appLaunchCount >= 5 {
-            showingRatingView = true
-            return
-        }
-        
-        // Show if user has completed habits for at least 3 consecutive days
-        if consecutiveCompletionDays >= 3 {
-            showingRatingView = true
-            return
-        }
-    }
-    
-    /// Requests a review using the native StoreKit API
-    /// This is an alternative method to the custom rating dialog
-    /// Used when the user selects "Rate in App" from the Settings screen
-    private func requestReviewWithStoreKit() {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            if #available(iOS 18.0, *) {
-                AppStore.requestReview(in: windowScene)
-            } else {
-                SKStoreReviewController.requestReview(in: windowScene)
-            }
-            // Mark as reviewed to prevent future popups
-            hasSubmittedReview = true
-        }
-    }
-    
-    // Add this helper function to calculate progress
-    private func calculateProgress(for habit: Habit, on date: Date) -> Double {
-        let calendar = Calendar.current
-        let startOfPeriod: Date
-        
-        switch habit.goal.period {
-        case .day:
-            startOfPeriod = calendar.startOfDay(for: date)
-        case .week:
-            startOfPeriod = calendar.dateInterval(of: .weekOfMonth, for: date)?.start ?? date
-        case .month:
-            startOfPeriod = calendar.dateInterval(of: .month, for: date)?.start ?? date
-        }
-        
-        let completionsInPeriod = habit.completedDates.filter { completedDate in
-            calendar.isDate(completedDate, equalTo: startOfPeriod, toGranularity: habit.goal.period == .day ? .day : .month)
-        }.count
-        
-        return Double(completionsInPeriod) / Double(habit.goal.target)
     }
 }
 
